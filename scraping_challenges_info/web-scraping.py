@@ -11,7 +11,7 @@ from datetime import datetime
 
 # ---------- Handle Command-Line Arguments ----------
 if len(sys.argv) != 2:
-    print("Usage: python web-scraper.py <challenge_list_url>")
+    print("Usage: python web-scraping.py <challenge_list_url>")
     sys.exit(1)
 
 url = sys.argv[1]
@@ -145,15 +145,19 @@ for i, a in enumerate(challenge_links):
 
 driver.quit()
 
-# ---------- Save Excel ----------
+# ---------- Save Excel to Excel-Files ----------
+excel_dir = os.path.join(os.path.dirname(__file__), "Excel-Files")
+os.makedirs(excel_dir, exist_ok=True)
+
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 excel_filename = f"nasa_challenges_{timestamp}.xlsx"
+full_path = os.path.join(excel_dir, excel_filename)
 
 df_basic = pd.DataFrame(basic_info)
 df_detailed = pd.DataFrame(detailed_info)
 
-with pd.ExcelWriter(excel_filename) as writer:
+with pd.ExcelWriter(full_path) as writer:
     df_basic.to_excel(writer, sheet_name="Basic Info", index=False)
     df_detailed.to_excel(writer, sheet_name="Challenge Details", index=False)
 
-print(f"\n Data saved to: {excel_filename}")
+print(f"\n Data saved to: {full_path}")
