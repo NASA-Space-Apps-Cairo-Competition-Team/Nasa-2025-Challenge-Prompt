@@ -14,15 +14,16 @@ def render_upload_tab():
     uploaded_file = st.file_uploader("Upload your Excel file", type=["xlsx"])
     if uploaded_file:
         try:
+
+            st.subheader("📄 Raw Excel Preview (Before AI Processing)")
             excel_data = pd.ExcelFile(uploaded_file)
             sheet_names = excel_data.sheet_names
-            selected_sheet = st.selectbox("📄 Select sheet to preview", sheet_names)
+            selected_sheet = st.selectbox("📄 Select sheet to preview", sheet_names, key="upload_sheet_selector")
+
 
             df = excel_data.parse(selected_sheet)
             df.columns = df.columns.astype(str).str.strip()
             st.session_state.upload_raw_df = df
-
-            st.subheader("📄 Raw Excel Preview (Before AI Processing)")
             st.dataframe(df)
 
             if st.button("🤖 Analyze Uploaded Sheet with AI"):

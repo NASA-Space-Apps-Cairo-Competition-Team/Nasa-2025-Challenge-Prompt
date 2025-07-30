@@ -8,6 +8,7 @@ from LLM_AND_UI.parser import parse_output
 from LLM_AND_UI.utils import get_latest_challenge_excel, run_scraper
 from LLM_AND_UI.state import freeze_ui_for_others, unlock_ui
 
+
 def render_scrape_tab():
     SECTION = "Scrape"
     freeze_ui_for_others(SECTION)
@@ -30,15 +31,26 @@ def render_scrape_tab():
         unlock_ui()
 
     if "scraped_excel_file" in st.session_state:
+        st.subheader("📄 Raw Excel Preview (Before AI Processing)")
         file = st.session_state["scraped_excel_file"]
         excel_data = pd.ExcelFile(file)
         sheet_names = excel_data.sheet_names
-        selected_sheet = st.selectbox("📄 Select sheet to preview", sheet_names)
 
+        # Safely select sheet
+        if "scrape_selected_sheet" not in st.session_state:
+            st.session_state.scrape_selected_sheet = sheet_names[0]
+
+        selected_sheet = st.selectbox("📄 Select sheet to preview", sheet_names, key="scrape_sheet_selector")
+
+        if st.session_state.scrape_selected_sheet != selected_sheet:
+            st.session_state.scrape_selected_sheet = selected_sheet
+            st.session_state.scrape_df = None  # Reset data when sheet changes
+
+        # Load sheet every time to keep it fresh
         try:
-            df = excel_data.parse(selected_sheet)
+            df = excel_data.parse(st.session_state.scrape_selected_sheet)
             df.columns = df.columns.astype(str).str.strip()
-            st.subheader("📄 Raw Excel Preview (Before AI Processing)")
+            st.session_state.scrape_raw_df = df  # Always hold raw
             st.dataframe(df)
 
             if st.button("🤖 Analyze Previewed Sheet with AI"):
@@ -57,17 +69,16 @@ def render_scrape_tab():
                     else:
                         st.error("Missing 'Title' column in scraped data.")
                 unlock_ui()
+
         except Exception as e:
             st.error(f"Failed to load sheet: {e}")
 
-    if st.session_state.scrape_df is not None and not st.session_state.scrape_df.empty:
+    # Add/Replace UI + Download
+    if st.session_state.get("scrape_df") is not None and not st.session_state.scrape_df.empty:
         _render_add_replace_ui("scrape_df", "Scraped", "scrape_title_input", "scrape_brief_input")
 
 
 def _render_add_replace_ui(state_key, sheet_name, title_key, brief_key):
-    from LLM_AND_UI.llm import analyze_brief
-    from LLM_AND_UI.parser import parse_output
-
     st.subheader(f"🧾 {sheet_name} Dataset Preview")
     st.dataframe(st.session_state[state_key])
 
@@ -97,7 +108,6 @@ def _render_add_replace_ui(state_key, sheet_name, title_key, brief_key):
                 st.session_state[state_key] = df
                 st.success("Challenge added or replaced.")
                 st.rerun()
-  # 🔁 Force re-render to update preview
 
     out = BytesIO()
     st.session_state[state_key].to_excel(out, index=False, sheet_name=sheet_name)
