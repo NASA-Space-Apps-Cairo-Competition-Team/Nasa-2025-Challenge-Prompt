@@ -14,37 +14,43 @@ def render_upload_tab():
     uploaded_file = st.file_uploader("Upload your Excel file", type=["xlsx"])
     if uploaded_file:
         try:
-
             st.subheader("📄 Raw Excel Preview (Before AI Processing)")
             excel_data = pd.ExcelFile(uploaded_file)
             sheet_names = excel_data.sheet_names
             selected_sheet = st.selectbox("📄 Select sheet to preview", sheet_names, key="upload_sheet_selector")
-
 
             df = excel_data.parse(selected_sheet)
             df.columns = df.columns.astype(str).str.strip()
             st.session_state.upload_raw_df = df
             st.dataframe(df)
 
-            if st.button("🤖 Analyze Uploaded Sheet with AI"):
+            if st.button("🤖 Analyze Uploaded Sheet with AI", key="upload_analyze_btn"):
                 st.session_state.active_section = SECTION
-                with st.spinner("Analyzing..."):
-                    if "Title" in df.columns:
-                        parsed = []
-                        for _, row in df.iterrows():
-                            out = analyze_brief(row)
-                            result = parse_output(out)
-                            result["Title"] = row["Title"]
-                            parsed.append(result)
-                        st.session_state.upload_df = pd.DataFrame(parsed)
-                        st.success("Upload analysis complete!")
-                    else:
-                        st.error("Missing 'Title' column in uploaded file.")
-                unlock_ui()
-        except Exception as e:
-            st.error(f"Error reading Excel file: {e}")
 
-    if st.session_state.upload_df is not None and not st.session_state.upload_df.empty:
+                if "Title" not in df.columns:
+                    st.error("Missing 'Title' column in uploaded file.")
+                    unlock_ui()
+                    return
+                progress_bar = st.progress(0, text="Starting analysis...")
+
+                parsed = []
+                total = len(df)
+                for i, (_, row) in enumerate(df.iterrows(), 1):
+                    progress_bar.progress(i / total, text=f"Analyzing {i} of {total} challenges...")
+                    out = analyze_brief(row)
+                    result = parse_output(out)
+                    result["Title"] = row["Title"]
+                    parsed.append(result)
+
+                st.session_state.upload_df = pd.DataFrame(parsed)
+                st.success("✅ Upload analysis complete!")
+                progress_bar.empty()
+                unlock_ui()
+
+        except Exception as e:
+            st.error(f"❌ Error reading Excel file: {e}")
+
+    if st.session_state.get("upload_df") is not None and not st.session_state.upload_df.empty:
         _render_add_replace_ui("upload_df", "Uploaded", "upload_title_input", "upload_brief_input")
 
 def _render_add_replace_ui(state_key, sheet_name, title_key, brief_key):
@@ -75,9 +81,8 @@ def _render_add_replace_ui(state_key, sheet_name, title_key, brief_key):
                     df = pd.concat([df, pd.DataFrame([parsed])], ignore_index=True)
 
                 st.session_state[state_key] = df
-                st.success("Challenge added or replaced.")
+                st.success("✅ Challenge added or replaced.")
                 st.rerun()
-  # 🔁 Force re-render to update preview
 
     out = BytesIO()
     st.session_state[state_key].to_excel(out, index=False, sheet_name=sheet_name)

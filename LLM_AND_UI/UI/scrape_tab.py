@@ -36,7 +36,6 @@ def render_scrape_tab():
         excel_data = pd.ExcelFile(file)
         sheet_names = excel_data.sheet_names
 
-        # Safely select sheet
         if "scrape_selected_sheet" not in st.session_state:
             st.session_state.scrape_selected_sheet = sheet_names[0]
 
@@ -44,36 +43,36 @@ def render_scrape_tab():
 
         if st.session_state.scrape_selected_sheet != selected_sheet:
             st.session_state.scrape_selected_sheet = selected_sheet
-            st.session_state.scrape_df = None  # Reset data when sheet changes
+            st.session_state.scrape_df = None  # Reset on sheet change
 
-        # Load sheet every time to keep it fresh
         try:
             df = excel_data.parse(st.session_state.scrape_selected_sheet)
             df.columns = df.columns.astype(str).str.strip()
-            st.session_state.scrape_raw_df = df  # Always hold raw
+            st.session_state.scrape_raw_df = df
             st.dataframe(df)
 
             if st.button("🤖 Analyze Previewed Sheet with AI"):
                 st.session_state.active_section = SECTION
-                with st.spinner("Analyzing..."):
-                    if "Title" in df.columns:
-                        parsed = []
-                        for _, row in df.iterrows():
-                            out = analyze_brief(row)
-                            result = parse_output(out)
-                            result["Title"] = row["Title"]
-                            parsed.append(result)
-                            time.sleep(1)
-                        st.session_state.scrape_df = pd.DataFrame(parsed)
-                        st.success("Analysis complete!")
-                    else:
-                        st.error("Missing 'Title' column in scraped data.")
+                if "Title" in df.columns:
+                    parsed = []
+                    total = len(df)
+                    progress = st.progress(0, text="Analyzing challenges...")
+                    for i, (_, row) in enumerate(df.iterrows()):
+                        out = analyze_brief(row)
+                        result = parse_output(out)
+                        result["Title"] = row["Title"]
+                        parsed.append(result)
+                        progress.progress((i + 1) / total, text=f"Analyzing challenge {i + 1} of {total}")
+                        time.sleep(0.2)
+                    st.session_state.scrape_df = pd.DataFrame(parsed)
+                    st.success("Analysis complete!")
+                else:
+                    st.error("Missing 'Title' column in scraped data.")
                 unlock_ui()
 
         except Exception as e:
             st.error(f"Failed to load sheet: {e}")
 
-    # Add/Replace UI + Download
     if st.session_state.get("scrape_df") is not None and not st.session_state.scrape_df.empty:
         _render_add_replace_ui("scrape_df", "Scraped", "scrape_title_input", "scrape_brief_input")
 
@@ -93,17 +92,17 @@ def _render_add_replace_ui(state_key, sheet_name, title_key, brief_key):
             with st.spinner("Analyzing new entry..."):
                 row = {"Title": title_input.strip(), "Brief": brief_input.strip()}
                 out = analyze_brief(row)
-                parsed = parse_output(out)
-                parsed["Title"] = title_input.strip()
+                result = parse_output(out)
+                result["Title"] = title_input.strip()
 
                 df = st.session_state[state_key].copy()
                 df["Title"] = df["Title"].astype(str)
 
                 idx = df[df["Title"].str.lower() == title_input.strip().lower()].index
                 if not idx.empty:
-                    df.loc[idx[0]] = parsed
+                    df.loc[idx[0]] = result
                 else:
-                    df = pd.concat([df, pd.DataFrame([parsed])], ignore_index=True)
+                    df = pd.concat([df, pd.DataFrame([result])], ignore_index=True)
 
                 st.session_state[state_key] = df
                 st.success("Challenge added or replaced.")
