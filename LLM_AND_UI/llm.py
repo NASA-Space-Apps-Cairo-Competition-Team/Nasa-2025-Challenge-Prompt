@@ -1,14 +1,17 @@
 import json
 from .config import model
 from .prompt import build_prompt
-import google.generativeai as genai
 
 def analyze_brief(row):
+   # print(f"Row data: {row}")
     prompt = build_prompt(row)
+   # print(f"Prompt built: {prompt}")
     if not prompt:
         return "Missing mandatory Title field"
     try:
+        #print(f"Response received: here")
         response = model.generate_content(prompt)
+       # print(f"Response received: {response.text}")
         return response.text
     except Exception as e:
         return f"Error: {str(e)}"

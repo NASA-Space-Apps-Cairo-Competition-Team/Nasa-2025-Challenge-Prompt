@@ -20,17 +20,18 @@ Make sure your Excel file contains a column titled: `Challenge Brief`
 
 ### Features
 
-* Upload `.xlsx` file with challenge briefs
-* Uses **Gemini API** (`google-generativeai`) to extract:
+- Upload `.xlsx` file with challenge briefs
+- Uses **Gemini API** (`google-generativeai`) to extract:
 
-  * Title
-  * Summary
-  * Relevant Fields
-  * Required Skills
-  * Workshop Topics
-  * Mentor Specializations
-  * Challenge Category
-* Download results as a formatted Excel file
+  - Title
+  - Summary
+  - Relevant Fields
+  - Required Skills
+  - Workshop Topics
+  - Mentor Specializations
+  - Challenge Category
+
+- Download results as a formatted Excel file
 
 ---
 
@@ -43,6 +44,7 @@ Make sure your Excel file contains a column titled: `Challenge Brief`
 ```bash
 pip install -r requirements.txt
 ```
+
 #### 3. Add your Gemini API key
 
 Replace `"YOUR_API_KEY_HERE"` in `brief_tagger_app.py` with your actual key:
@@ -55,15 +57,21 @@ genai.configure(api_key="YOUR_API_KEY_HERE")
 
 ### Run the App
 
+try both
+
 ```bash
 streamlit run challenge_brief_app.py
+```
+
+```bash
+python -m streamlit  run challenge_brief_app.py
 ```
 
 ---
 
 ### Dependencies
 
-* `streamlit`
-* `pandas`
-* `openpyxl`
-* `google-generativeai`
+- `streamlit`
+- `pandas`
+- `openpyxl`
+- `google-generativeai`

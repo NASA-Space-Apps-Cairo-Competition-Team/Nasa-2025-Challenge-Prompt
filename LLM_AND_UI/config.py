@@ -7,12 +7,12 @@ load_dotenv()
 
 # Setup Gemini
 api_key = os.getenv("GEMINI_API_KEY")
-model_name = os.getenv("MODEL_NAME", "gemini-1.5-pro-latest")
+model_name = os.getenv("MODEL_NAME", "gemini-2.5-pro")
 if not api_key:
     raise ValueError("Missing GEMINI_API_KEY in .env file")
 
 genai.configure(api_key=api_key)
-model = genai.GenerativeModel(model_name=model_name)
+model = genai.GenerativeModel(model_name="gemini-2.5-pro")
 
 # Directory Configs
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
