@@ -1,5 +1,4 @@
 openpyxl
 pandas
 selenium
-bs4
-time
+beautifulsoup4

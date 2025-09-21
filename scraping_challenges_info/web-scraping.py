@@ -59,14 +59,24 @@ def extract_meta_info(detail_soup):
     return result
 
 def extract_html_sections(detail_soup):
-    content = detail_soup.select_one('.challenge-details_content__218__')
-    if not content:
-        return {}
-
-    children = content.find_all(recursive=False)
     sections = {}
     brief_parts = []
-    current_section = None
+
+    # Grab all paragraphs with the brief class
+    brief_elements = detail_soup.select("p.challenge-details_content__218__")
+    for p in brief_elements:
+        text = p.get_text(strip=True)
+        if text:
+            brief_parts.append(text)
+
+    if brief_parts:
+        sections["Brief"] = "\n".join(brief_parts)
+
+    
+    content = detail_soup.select_one('.challenge-details_content__218__')
+    if content:
+        children = content.find_all(recursive=False)
+        current_section = None
 
     for el in children:
         if el.name == 'h2':
@@ -80,13 +90,13 @@ def extract_html_sections(detail_soup):
                 text = el.get_text(strip=True)
                 if text:
                     sections[current_section] += text + '\n'
-        elif el.name == 'p':
-            text = el.get_text(strip=True)
-            if text:
-                brief_parts.append(text)
+    #     elif el.name == 'p':
+    #         text = el.get_text(strip=True)
+    #         if text:
+    #             brief_parts.append(text)
 
-    if brief_parts:
-        sections["Brief"] = '\n'.join(brief_parts)
+    # if brief_parts:
+    #     sections["Brief"] = '\n'.join(brief_parts)
 
     return sections
 
@@ -112,6 +122,20 @@ for i, a in enumerate(challenge_links):
             data = json.loads(script_tag.string)
             challenge_data = data["props"]["pageProps"]["challenge"]
             data_blocks = challenge_data.get("dataBlocks", [])
+
+            # 🔑 Grab Brief directly
+            brief_text = challenge_data.get("brief", "").strip()
+            if not brief_text:
+                brief_text = challenge_data.get("excerpt", "").strip()
+
+            if brief_text:
+                section_data["Brief"] = brief_text
+            else:
+                # fallback to detailsContent, but strip HTML tags
+                details_html = challenge_data.get("detailsContent", "").strip()
+                if details_html:
+                    details_soup = BeautifulSoup(details_html, "html.parser")
+                    section_data["Brief"] = details_soup.get_text(separator="\n", strip=True)
 
             for block in data_blocks:
                 block_title = block.get("title", "").strip()
