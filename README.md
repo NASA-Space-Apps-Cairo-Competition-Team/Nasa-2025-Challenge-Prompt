@@ -75,3 +75,12 @@ python -m streamlit  run challenge_brief_app.py
 - `pandas`
 - `openpyxl`
 - `google-generativeai`
+
+## Developers
+- **Youssef Lashin**
+- **Salma Swailem**
+- **Mohamed Nasser**
+
+## License
+This project is developed as part of the **NASA Space Apps Cairo 2025 Hackathon**. Licensing terms may depend on event regulations.
+
